@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Wedding Checklist</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  /* Login Screen */
+  #login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 16px;
+  }
+  #login-screen h1 {
+    font-size: 2rem;
+    color: #e94560;
+    margin-bottom: 8px;
+  }
+  #login-screen input {
+    width: 100%;
+    max-width: 320px;
+    padding: 16px;
+    font-size: 1.1rem;
+    border: 2px solid #333;
+    border-radius: 12px;
+    background: #16213e;
+    color: #eee;
+    outline: none;
+  }
+  #login-screen input:focus { border-color: #e94560; }
+  #login-screen button {
+    width: 100%;
+    max-width: 320px;
+    padding: 16px;
+    font-size: 1.2rem;
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  #login-screen button:active { background: #c73652; }
+  #login-error { color: #ff6b6b; font-size: 0.95rem; display: none; }
+
+  /* App Screen */
+  #app-screen { display: none; max-width: 600px; margin: 0 auto; }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #333;
+  }
+  .header h1 { font-size: 1.5rem; color: #e94560; }
+  .logout-btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    background: #333;
+    color: #eee;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .checklist { display: flex; flex-direction: column; gap: 10px; }
+  
+  .item-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #16213e;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid #333;
+  }
+  .item-row.done { opacity: 0.5; }
+  .item-row.done .item-label { text-decoration: line-through; }
+  
+  .item-check {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    accent-color: #e94560;
+    cursor: pointer;
+  }
+  
+  .item-label {
+    flex: 1;
+    font-size: 1.05rem;
+    word-break: break-word;
+  }
+  
+  .cost-input {
+    width: 110px;
+    min-width: 110px;
+    padding: 12px;
+    font-size: 1.1rem;
+    text-align: right;
+    border: 2px solid #333;
+    border-radius: 10px;
+    background: #0f3460;
+    color: #eee;
+    outline: none;
+  }
+  .cost-input:focus { border-color: #e94560; }
+  .cost-input::placeholder { color: #666; }
+
+  /* Total Bar */
+  .total-bar {
+    position: sticky;
+    bottom: 0;
+    background: #1a1a2e;
+    border-top: 2px solid #e94560;
+    padding: 16px 0;
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .total-label { font-size: 1.2rem; color: #aaa; }
+  .total-amount { 
+    font-size: 1.8rem; 
+    font-weight: bold; 
+    color: #e94560;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Add item */
+  .add-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .add-row input {
+    flex: 1;
+    padding: 14px;
+    font-size: 1.05rem;
+    border: 2px solid #333;
+    border-radius: 12px;
+    background: #16213e;
+    color: #eee;
+    outline: none;
+  }
+  .add-row input:focus { border-color: #e94560; }
+  .add-row button {
+    padding: 14px 20px;
+    font-size: 1rem;
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .add-row button:active { background: #c73652; }
+
+  /* Reset */
+  .reset-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    font-size: 0.95rem;
+    background: transparent;
+    color: #888;
+    border: 1px solid #444;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .reset-btn:active { color: #e94560; border-color: #e94560; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <h1>💒 Wedding Checklist</h1>
+  <input type="text" id="user-input" placeholder="Username" autocomplete="off">
+  <input type="password" id="pass-input" placeholder="Password" autocomplete="off">
+  <button onclick="doLogin()">Log In</button>
+  <div id="login-error">Wrong username or password</div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="header">
+    <h1>💒 Wedding Checklist</h1>
+    <button class="logout-btn" onclick="doLogout()">Log Out</button>
+  </div>
+
+  <div class="checklist" id="checklist"></div>
+
+  <div class="add-row">
+    <input type="text" id="new-item" placeholder="Add new item..." onkeydown="if(event.key==='Enter')addItem()">
+    <button onclick="addItem()">Add</button>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">🗑 Reset All Costs & Checks</button>
+
+  <div class="total-bar">
+    <span class="total-label">Total</span>
+    <span class="total-amount" id="total-amount">$0.00</span>
+  </div>
+</div>
+
+<script>
+const USER = 'Todd';
+const PASS = 'Bestwedding';
+const STORAGE_KEY = 'wedding-checklist-data';
+
+let items = [];
+
+// Load from localStorage
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) items = JSON.parse(raw);
+  } catch(e) { items = []; }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function render() {
+  const el = document.getElementById('checklist');
+  el.innerHTML = '';
+  items.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'item-row' + (item.done ? ' done' : '');
+    row.innerHTML = `
+      <input type="checkbox" class="item-check" ${item.done ? 'checked' : ''} onchange="toggleDone(${i})">
+      <span class="item-label">${escHtml(item.label)}</span>
+      <input type="text" class="cost-input" inputmode="decimal" placeholder="$0" 
+        value="${item.cost ? formatCurrency(item.cost) : ''}" 
+        oninput="updateCost(${i}, this.value)"
+        onblur="cleanCost(this)">
+    `;
+    el.appendChild(row);
+  });
+  updateTotal();
+}
+
+function updateCost(i, val) {
+  // Strip non-numeric except dot
+  const cleaned = val.replace(/[^0-9.]/g, '');
+  const num = parseFloat(cleaned);
+  items[i].cost = isNaN(num) ? 0 : num;
+  saveData();
+  updateTotal();
+}
+
+function cleanCost(input) {
+  const val = input.value.replace(/[^0-9.]/g, '');
+  const num = parseFloat(val);
+  input.value = num > 0 ? formatCurrency(num) : '';
+}
+
+function formatCurrency(n) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function updateTotal() {
+  const total = items.reduce((sum, item) => sum + (item.cost || 0), 0);
+  document.getElementById('total-amount').textContent = '$' + formatCurrency(total);
+}
+
+function toggleDone(i) {
+  items[i].done = !items[i].done;
+  saveData();
+  render();
+}
+
+function addItem() {
+  const input = document.getElementById('new-item');
+  const label = input.value.trim();
+  if (!label) return;
+  items.push({ label, cost: 0, done: false });
+  input.value = '';
+  saveData();
+  render();
+}
+
+function resetAll() {
+  if (!confirm('Reset all costs and checkmarks? This cannot be undone.')) return;
+  items.forEach(item => { item.cost = 0; item.done = false; });
+  saveData();
+  render();
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Login
+function doLogin() {
+  const u = document.getElementById('user-input').value;
+  const p = document.getElementById('pass-input').value;
+  if (u === USER && p === PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    loadData();
+    render();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('user-input').value = '';
+  document.getElementById('pass-input').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+// Allow Enter key on login
+document.getElementById('pass-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('user-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('pass-input').focus();
+});
+</script>
+</body>
+</html>
