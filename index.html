@@ -1481,15 +1481,7 @@ body {
     </select>
 
     <label>Number of Guests</label>
-    <select id="rsvpGuests">
-      <option value="1">Just me</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-    </select>
-
-    <label>Dietary Needs</label>
-    <textarea id="rsvpDiet" placeholder="None / allergies / dietary notes..." rows="2" autocomplete="off" autocapitalize="sentences"></textarea>
+    <input type="number" id="rsvpGuests" value="1" min="1" max="99" inputmode="numeric" autocomplete="off">
 
     <label>🎲 Board Game or Card Game You're Bringing</label>
     <input type="text" id="rsvpGame" placeholder="Catan, Uno, Cards Against Humanity...">
@@ -2237,7 +2229,6 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
     email: document.getElementById('rsvpEmail').value.trim(),
     attending: attending,
     guests: parseInt(document.getElementById('rsvpGuests').value) || 1,
-    diet: document.getElementById('rsvpDiet').value.trim(),
     game: document.getElementById('rsvpGame').value.trim(),
     song: document.getElementById('rsvpSong').value.trim(),
     message: document.getElementById('rsvpMessage').value.trim(),
