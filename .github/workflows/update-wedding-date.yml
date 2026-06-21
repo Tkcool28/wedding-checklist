@@ -1,0 +1,36 @@
+name: Update wedding date
+
+on:
+  push:
+    paths:
+      - .github/workflows/update-wedding-date.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update displayed wedding date
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          old = 'October 17, 2026'
+          new = 'September 26, 2026'
+          count = text.count(old)
+          if count != 2:
+              raise SystemExit(f'Expected exactly 2 date references, found {count}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          rm .github/workflows/update-wedding-date.yml
+      - name: Commit date correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: update wedding date to September 26, 2026"
+          git push
