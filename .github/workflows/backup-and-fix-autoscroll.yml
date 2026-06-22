@@ -1,0 +1,62 @@
+name: Backup and fix autoscroll
+
+on:
+  push:
+    paths:
+      - .github/workflows/backup-and-fix-autoscroll.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Back up full page and prevent load-time autoscroll
+        run: |
+          set -e
+          mkdir -p backup
+          cp index.html backup/old2.html
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          marker = '// ===================== PREVENT LOAD-TIME AUTOSCROLL ====================='
+          if marker not in text:
+              fix = r'''
+// ===================== PREVENT LOAD-TIME AUTOSCROLL =====================
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+
+window.addEventListener('load', function() {
+  if (window.location.hash) {
+    history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  }
+  window.scrollTo(0, 0);
+  requestAnimationFrame(function() {
+    window.scrollTo(0, 0);
+  });
+});
+'''
+              closing = '</script>'
+              if text.count(closing) != 1:
+                  raise SystemExit(f'Expected exactly one closing script tag, found {text.count(closing)}')
+              text = text.replace(closing, fix + '\n' + closing)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+          rm .github/workflows/backup-and-fix-autoscroll.yml
+
+      - name: Commit backup and fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: back up page and prevent load-time autoscroll"
+          git push
