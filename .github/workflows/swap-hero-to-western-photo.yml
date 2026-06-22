@@ -1,0 +1,36 @@
+name: Swap hero to western photo
+
+on:
+  push:
+    paths:
+      - .github/workflows/swap-hero-to-western-photo.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace hero image only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          old = "assets/IMG_20260621_195305.jpg"
+          new = "assets/file_00000000be1471f8b301bdaebb24cb3c.png"
+          count = text.count(old)
+          if count < 1:
+              raise SystemExit(f'Expected existing hero image reference, found {count}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          rm .github/workflows/swap-hero-to-western-photo.yml
+      - name: Commit change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: swap hero to western couple photo"
+          git push
