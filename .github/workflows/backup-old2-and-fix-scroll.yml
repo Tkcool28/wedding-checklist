@@ -1,0 +1,39 @@
+name: Backup old2 and fix scroll
+on: [push]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p backup
+          cp index.html backup/old2.html
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = 'PREVENT LOAD-TIME AUTOSCROLL'
+          if marker not in s:
+              patch = """
+// PREVENT LOAD-TIME AUTOSCROLL
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.addEventListener('load', function () {
+  if (window.location.hash) {
+    history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  }
+  window.scrollTo(0, 0);
+  setTimeout(function () { window.scrollTo(0, 0); }, 0);
+});
+"""
+              s = s.replace('</script>', patch + '\n</script>')
+              p.write_text(s, encoding='utf-8')
+          PY
+          rm .github/workflows/backup-old2-and-fix-scroll.yml
+      - run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix: back up page as old2 and prevent autoscroll"
+          git push
