@@ -1,0 +1,45 @@
+name: Update hero image
+
+on:
+  push:
+    paths:
+      - .github/workflows/update-hero-image.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update hero background
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          assets = Path('assets')
+          candidates = [p for p in assets.iterdir() if p.is_file() and re.fullmatch(r'\d+\.(?:jpg|jpeg|png|webp)', p.name, re.I)]
+          if len(candidates) != 1:
+              raise SystemExit(f'Expected one numeric image, found: {[p.name for p in candidates]}')
+
+          image = candidates[0]
+          target = assets / f'hero-background{image.suffix.lower()}'
+          image.rename(target)
+
+          page = Path('index.html')
+          text = page.read_text(encoding='utf-8')
+          old = 'https://images.pexels.com/photos/12661104/pexels-photo-12661104.jpeg?auto=compress&cs=tinysrgb&w=1920'
+          if old not in text:
+              raise SystemExit('Existing hero image URL not found')
+          page.write_text(text.replace(old, target.as_posix()), encoding='utf-8')
+          PY
+          rm .github/workflows/update-hero-image.yml
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: use uploaded image as hero background"
+          git push
