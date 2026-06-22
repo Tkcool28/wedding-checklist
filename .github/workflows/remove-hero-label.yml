@@ -1,0 +1,35 @@
+name: Remove hero label
+
+on:
+  push:
+    paths:
+      - .github/workflows/remove-hero-label.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove Backyard Wedding label
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          old = '  <div class="hero-date-label anim">Backyard Wedding</div>\n'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one hero label, found {count}')
+          path.write_text(text.replace(old, ''), encoding='utf-8')
+          PY
+          rm .github/workflows/remove-hero-label.yml
+      - name: Commit change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: remove hero backyard wedding label"
+          git push
