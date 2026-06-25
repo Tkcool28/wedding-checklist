@@ -1,0 +1,68 @@
+name: Center hero details
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/center-hero-details.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-hero:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Center hero text and keep date on one line
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old_css = """.hero-details {
+            display: inline-flex;
+            justify-content: center;
+            max-width: min(620px, 100%);
+            padding: 18px 22px;
+          """
+          new_css = """.hero-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            max-width: min(620px, 100%);
+            width: 100%;
+            padding: 18px 22px;
+          """
+
+          old_html = """  <div class=\"hero-details anim\">
+              <strong>September 26, 2026</strong><br>
+              Our Backyard<br>
+              Autumn celebration with pizza, games & good people
+            </div>"""
+          new_html = """  <div class=\"hero-details anim\">
+              <strong>September 26, 2026</strong>
+              <span>Our Backyard</span>
+              <span>Autumn celebration with pizza, games &amp; good people</span>
+            </div>"""
+
+          if old_css not in text:
+              raise SystemExit('Expected hero-details CSS block not found')
+          if old_html not in text:
+              raise SystemExit('Expected hero-details HTML block not found')
+
+          text = text.replace(old_css, new_css, 1)
+          text = text.replace(old_html, new_html, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: center hero details and keep date on one line"
+          git push
