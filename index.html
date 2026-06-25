@@ -1177,9 +1177,13 @@ body {
 }
 
 .hero-details {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  text-align: center;
   max-width: min(620px, 100%);
+  width: 100%;
   padding: 18px 22px;
   border: 1px solid rgba(209, 151, 78, 0.28);
   border-radius: 22px;
@@ -1440,9 +1444,9 @@ body {
   <div class="hero-ampersand anim" style="visibility:hidden">&</div>
   <h2 class="anim" style="visibility:hidden">Todd</h2>
   <div class="hero-details anim">
-    <strong>September 26, 2026</strong><br>
-    Our Backyard<br>
-    Autumn celebration with pizza, games & good people
+    <strong>September 26, 2026</strong>
+    <span>Our Backyard</span>
+    <span>Autumn celebration with pizza, games &amp; good people</span>
   </div>
   <a class="hero-cta anim" href="#rsvp">RSVP Now</a>
   <div style="margin-top:14px">
