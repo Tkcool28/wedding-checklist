@@ -1,4 +1,4 @@
-name: Remove wedding couple photo
+name: Update ceremony time
 
 on:
   push:
@@ -18,39 +18,29 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Remove third photo and tighten spacing
+      - name: Update ceremony time
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           path = Path('index.html')
-          text = path.read_text()
+          text = path.read_text(encoding='utf-8')
 
-          old_img = '  <img src="assets/wedding-couple.webp" alt="Chandra and Todd celebrating at their backyard wedding" loading="lazy">\n'
-          if old_img not in text:
-              raise SystemExit('Expected wedding-couple.webp image tag not found')
-          text = text.replace(old_img, '', 1)
+          old = '        <p>4:30 PM<br>Backyard Ceremony<br>Dress: Autumn Elegance</p>'
+          new = '        <p>5:00 PM<br>Backyard Ceremony<br>Dress: Autumn Elegance</p>'
+          if old not in text:
+              raise SystemExit('Expected ceremony time line not found')
 
-          old_grid = '  grid-template-columns: repeat(3, 1fr);'
-          new_grid = '  grid-template-columns: repeat(2, 1fr);'
-          if old_grid not in text:
-              raise SystemExit('Expected 3-column photo strip rule not found')
-          text = text.replace(old_grid, new_grid, 1)
-
-          old_spacing = '.section {\n  padding-top: 92px;\n}'
-          new_spacing = '.section {\n  padding-top: 40px;\n}'
-          if old_spacing not in text:
-              raise SystemExit('Expected preview section spacing rule not found')
-          text = text.replace(old_spacing, new_spacing, 1)
-
-          path.write_text(text)
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
 
-      - name: Commit page update
+      - name: Commit ceremony time update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --stat
-          git commit -m "Remove third homepage photo" || exit 0
+          git commit -m "Update ceremony time to 5 PM" || exit 0
           git push
+
+# ceremony-time trigger
