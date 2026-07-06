@@ -1,0 +1,44 @@
+name: Update ceremony time
+
+on:
+  push:
+    paths:
+      - '.github/workflows/update-ceremony-time.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-page:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update ceremony time
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old = '        <p>4:30 PM<br>Backyard Ceremony<br>Dress: Autumn Elegance</p>'
+          new = '        <p>5:00 PM<br>Backyard Ceremony<br>Dress: Autumn Elegance</p>'
+          if old not in text:
+              raise SystemExit('Expected ceremony time line not found')
+
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Commit ceremony time update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --stat
+          git commit -m "Update ceremony time to 5 PM" || exit 0
+          git push
