@@ -1,4 +1,4 @@
-name: Update RSVP wording
+name: Remove RSVP note second sentence
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update RSVP wording and fields
+      - name: Remove second RSVP note sentence
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -26,33 +26,27 @@ jobs:
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
 
-          replacements = [
-              ('<p>9:00 PM<br>Ice Cream Social<br>Bonfire &amp; Games</p>', '<p>9:00 PM<br>Dessert Bar<br>Bonfire &amp; Games</p>'),
-              ("<label>🎲 Board Game or Card Game You're Bringing</label>", '<label>🎲 What card or board game do you like to play?</label>'),
-              ('<input type="text" id="rsvpGame" placeholder="Catan, Uno, Cards Against Humanity...">', '<input type="text" id="rsvpGame" placeholder="Catan, Uno, Cards Against Humanity...">'),
-              ('<label>Song Request</label>\n    <input type="text" id="rsvpSong" placeholder="Get us on the dance floor!">', '<label>What song will have you singing at the top of your lungs?</label>\n    <input type="text" id="rsvpSong" placeholder="Your belt-it-out song...">\n\n    <label>If you had to pick a song to shake your booty to, what song would it be?</label>\n    <input type="text" id="rsvpBootySong" placeholder="Your dance-floor song...">\n\n    <label>If someone wanted to strike up a conversation with you, what subject gets you chatty?</label>\n    <input type="text" id="rsvpChatSubject" placeholder="Watches, movies, dogs, travel...">'),
-              ('Pizza, whisky, cigars, ice cream, bonfire, and good people.', 'Pizza, whisky, cigars, dessert bar, bonfire, and good people.'),
-              ("song: r.song || '',\n          message: r.message || '',", "song: r.song || '',\n          bootySong: r.bootySong || '',\n          chatSubject: r.chatSubject || '',\n          message: r.message || '',"),
-              ("song: document.getElementById('rsvpSong').value.trim(),\n    message: document.getElementById('rsvpMessage').value.trim(),", "song: document.getElementById('rsvpSong').value.trim(),\n    bootySong: document.getElementById('rsvpBootySong').value.trim(),\n    chatSubject: document.getElementById('rsvpChatSubject').value.trim(),\n    message: document.getElementById('rsvpMessage').value.trim(),"),
-              ("(r.song ? '<br><span>Song:</span> ' + escHtml(r.song) : '<br><span>Song:</span> <em>Not provided</em>') +\n        (r.diet ? '<br><span>Diet:</span> ' + escHtml(r.diet) : '') +", "(r.song ? '<br><span>Sing-along song:</span> ' + escHtml(r.song) : '<br><span>Sing-along song:</span> <em>Not provided</em>') +\n        (r.bootySong ? '<br><span>Booty-shaking song:</span> ' + escHtml(r.bootySong) : '<br><span>Booty-shaking song:</span> <em>Not provided</em>') +\n        (r.chatSubject ? '<br><span>Chatty subject:</span> ' + escHtml(r.chatSubject) : '<br><span>Chatty subject:</span> <em>Not provided</em>') +\n        (r.diet ? '<br><span>Diet:</span> ' + escHtml(r.diet) : '') +"),
-              ("detailRow('Board Game or Card Game', r.game),\n    detailRow('Song Request', r.song),", "detailRow('Card or Board Game They Like', r.game),\n    detailRow('Top-of-Lungs Song', r.song),\n    detailRow('Booty-Shaking Song', r.bootySong),\n    detailRow('Conversation Starter', r.chatSubject),"),
-          ]
+          old = '''    <div class="rsvp-note">
+      🎲 Chandra &amp; Todd ask all guests to bring a board game or card game! 🎲<br>
+      Pizza, whisky, cigars, dessert bar, bonfire, and good people.
+    </div>'''
+          new = '''    <div class="rsvp-note">
+      🎲 Chandra &amp; Todd ask all guests to bring a board game or card game! 🎲
+    </div>'''
 
-          for old, new in replacements:
-              if old not in text:
-                  raise SystemExit(f'Expected text not found: {old[:80]}')
-              text = text.replace(old, new, 1)
+          if old not in text:
+              raise SystemExit('Expected RSVP note block not found')
 
-          path.write_text(text, encoding='utf-8')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
 
-      - name: Commit RSVP wording update
+      - name: Commit RSVP note update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --stat
-          git commit -m "Update RSVP wording and late night dessert text" || exit 0
+          git commit -m "Remove extra RSVP note sentence" || exit 0
           git push
 
-# rsvp-wording-trigger
+# remove-rsvp-note-second-sentence
