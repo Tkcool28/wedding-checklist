@@ -1,4 +1,4 @@
-name: Remove RSVP note second sentence
+name: Update host location and story text
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Remove second RSVP note sentence
+      - name: Update host location and remove ice cream from story
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -26,27 +26,26 @@ jobs:
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
 
-          old = '''    <div class="rsvp-note">
-      🎲 Chandra &amp; Todd ask all guests to bring a board game or card game! 🎲<br>
-      Pizza, whisky, cigars, dessert bar, bonfire, and good people.
-    </div>'''
-          new = '''    <div class="rsvp-note">
-      🎲 Chandra &amp; Todd ask all guests to bring a board game or card game! 🎲
-    </div>'''
+          replacements = [
+              ('    <span>Our Backyard</span>', '    <span>Hosted by Denise and Frank Sireno</span>\n    <span>937 Wagonwheel Dr. Ft. Collins, CO.</span>'),
+              ('<p>An intimate backyard celebration among closest friends and family: warm string lights, autumn colors, wood-fired pizza, whisky, cigars, ice cream, bonfire, and plenty of games.</p>', '<p>An intimate backyard celebration among closest friends and family: warm string lights, autumn colors, wood-fired pizza, whisky, cigars, bonfire, and plenty of games.</p>'),
+          ]
 
-          if old not in text:
-              raise SystemExit('Expected RSVP note block not found')
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'Expected text not found: {old}')
+              text = text.replace(old, new, 1)
 
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          path.write_text(text, encoding='utf-8')
           PY
 
-      - name: Commit RSVP note update
+      - name: Commit host and story update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --stat
-          git commit -m "Remove extra RSVP note sentence" || exit 0
+          git commit -m "Update wedding host location and story text" || exit 0
           git push
 
-# remove-rsvp-note-second-sentence
+# host-location-story-trigger
