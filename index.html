@@ -1482,7 +1482,7 @@ body {
     <div class="detail-card">
       <span class="detail-icon">🍦</span>
       <h3>Late Night</h3>
-      <p>9:00 PM<br>Ice Cream Social<br>Bonfire &amp; Games</p>
+      <p>9:00 PM<br>Dessert Bar<br>Bonfire &amp; Games</p>
     </div>
   </div>
 
@@ -1516,16 +1516,22 @@ body {
     <label>Number of Guests</label>
     <input type="number" id="rsvpGuests" value="1" min="1" max="99" inputmode="numeric" autocomplete="off">
 
-    <label>🎲 Board Game or Card Game You're Bringing</label>
+    <label>🎲 What card or board game do you like to play?</label>
     <input type="text" id="rsvpGame" placeholder="Catan, Uno, Cards Against Humanity...">
 
     <div class="rsvp-note">
       🎲 Chandra &amp; Todd ask all guests to bring a board game or card game! 🎲<br>
-      Pizza, whisky, cigars, ice cream, bonfire, and good people.
+      Pizza, whisky, cigars, dessert bar, bonfire, and good people.
     </div>
 
-    <label>Song Request</label>
-    <input type="text" id="rsvpSong" placeholder="Get us on the dance floor!">
+    <label>What song will have you singing at the top of your lungs?</label>
+    <input type="text" id="rsvpSong" placeholder="Your belt-it-out song...">
+
+    <label>If you had to pick a song to shake your booty to, what song would it be?</label>
+    <input type="text" id="rsvpBootySong" placeholder="Your dance-floor song...">
+
+    <label>If someone wanted to strike up a conversation with you, what subject gets you chatty?</label>
+    <input type="text" id="rsvpChatSubject" placeholder="Watches, movies, dogs, travel...">
 
     <label>Message</label>
     <textarea id="rsvpMessage" placeholder="Anything you'd like to share..."></textarea>
@@ -1934,6 +1940,8 @@ function loadRsvpsFromVps() {
           diet: r.dietary || '',
           game: r.game || '',
           song: r.song || '',
+          bootySong: r.bootySong || '',
+          chatSubject: r.chatSubject || '',
           message: r.message || '',
           date: r.created_at || new Date().toISOString(),
           vpsId: r.id
@@ -2276,6 +2284,8 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
     guests: parseInt(document.getElementById('rsvpGuests').value) || 1,
     game: document.getElementById('rsvpGame').value.trim(),
     song: document.getElementById('rsvpSong').value.trim(),
+    bootySong: document.getElementById('rsvpBootySong').value.trim(),
+    chatSubject: document.getElementById('rsvpChatSubject').value.trim(),
     message: document.getElementById('rsvpMessage').value.trim(),
     date: new Date().toISOString()
   };
@@ -2375,7 +2385,9 @@ function renderRsvpLog() {
         '<span>Guests:</span> ' + r.guests + '<br>' +
         '<span>Email:</span> ' + (r.email ? escHtml(r.email) : '<em>Not provided</em>') +
         (r.game ? '<br><span>Game:</span> ' + escHtml(r.game) : '<br><span>Game:</span> <em>Not provided</em>') +
-        (r.song ? '<br><span>Song:</span> ' + escHtml(r.song) : '<br><span>Song:</span> <em>Not provided</em>') +
+        (r.song ? '<br><span>Sing-along song:</span> ' + escHtml(r.song) : '<br><span>Sing-along song:</span> <em>Not provided</em>') +
+        (r.bootySong ? '<br><span>Booty-shaking song:</span> ' + escHtml(r.bootySong) : '<br><span>Booty-shaking song:</span> <em>Not provided</em>') +
+        (r.chatSubject ? '<br><span>Chatty subject:</span> ' + escHtml(r.chatSubject) : '<br><span>Chatty subject:</span> <em>Not provided</em>') +
         (r.diet ? '<br><span>Diet:</span> ' + escHtml(r.diet) : '') +
         (r.message ? '<br><span>Note:</span> ' + escHtml((r.message.length > 160 ? r.message.slice(0, 160) + '…' : r.message)) : '<br><span>Note:</span> <em>Not provided</em>') +
       '</div></div>';
@@ -2424,8 +2436,10 @@ function showRsvpDetails(idx) {
     detailRow('Email', r.email),
     detailRow('Attending', r.attending === 'yes' ? 'Yes' : 'No'),
     detailRow('Guests', r.guests || ''),
-    detailRow('Board Game or Card Game', r.game),
-    detailRow('Song Request', r.song),
+    detailRow('Card or Board Game They Like', r.game),
+    detailRow('Top-of-Lungs Song', r.song),
+    detailRow('Booty-Shaking Song', r.bootySong),
+    detailRow('Conversation Starter', r.chatSubject),
     detailRow('Dietary Notes', r.diet),
     detailRow('Message', r.message),
     detailRow('Submitted', date)
