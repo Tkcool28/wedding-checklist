@@ -1,0 +1,56 @@
+name: Remove wedding couple photo
+
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-wedding-couple-photo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-page:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove third photo and tighten spacing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text()
+
+          old_img = '  <img src="assets/wedding-couple.webp" alt="Chandra and Todd celebrating at their backyard wedding" loading="lazy">\n'
+          if old_img not in text:
+              raise SystemExit('Expected wedding-couple.webp image tag not found')
+          text = text.replace(old_img, '', 1)
+
+          old_grid = '  grid-template-columns: repeat(3, 1fr);'
+          new_grid = '  grid-template-columns: repeat(2, 1fr);'
+          if old_grid not in text:
+              raise SystemExit('Expected 3-column photo strip rule not found')
+          text = text.replace(old_grid, new_grid, 1)
+
+          old_spacing = '.section {\n  padding-top: 92px;\n}'
+          new_spacing = '.section {\n  padding-top: 40px;\n}'
+          if old_spacing not in text:
+              raise SystemExit('Expected preview section spacing rule not found')
+          text = text.replace(old_spacing, new_spacing, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Commit page update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --stat
+          git commit -m "Remove third homepage photo" || exit 0
+          git push
