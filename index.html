@@ -1940,8 +1940,8 @@ function loadRsvpsFromVps() {
           diet: r.dietary || '',
           game: r.game || '',
           song: r.song || '',
-          bootySong: r.bootySong || '',
-          chatSubject: r.chatSubject || '',
+          bootySong: r.booty_song || '',
+          chatSubject: r.chat_subject || '',
           message: r.message || '',
           date: r.created_at || new Date().toISOString(),
           vpsId: r.id
@@ -2257,7 +2257,9 @@ function syncPendingRsvps() {
       dietary: rsvp.diet || '',
       message: rsvp.message || '',
       game: rsvp.game || '',
-      song: rsvp.song || ''
+      song: rsvp.song || '',
+      bootySong: rsvp.bootySong || '',
+      chatSubject: rsvp.chatSubject || ''
     }, null, function(res) {
       if (res.ok) {
         console.log('Pending RSVP synced:', rsvp.name);
@@ -2313,7 +2315,9 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
         dietary: rsvp.diet || '',
         message: rsvp.message || '',
         game: rsvp.game || '',
-        song: rsvp.song || ''
+        song: rsvp.song || '',
+        bootySong: rsvp.bootySong || '',
+        chatSubject: rsvp.chatSubject || ''
       }, null, function(res) {
         if (res.ok) {
           document.getElementById('rsvpForm').style.display = 'none';
