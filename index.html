@@ -424,6 +424,16 @@ body {
   background: var(--burnt-orange-light);
   border-color: var(--burnt-orange-light);
 }
+.rsvp-submit-error {
+  display: none;
+  margin-top: 14px;
+  padding: 12px 14px;
+  color: #ffd8c4;
+  background: rgba(196,93,44,0.15);
+  border: 1px solid rgba(196,93,44,0.45);
+  border-radius: 3px;
+  line-height: 1.45;
+}
 .rsvp-note {
   text-align: center;
   font-style: italic;
@@ -1571,6 +1581,7 @@ body {
     <textarea id="rsvpMessage" placeholder="Anything you'd like to share..."></textarea>
 
     <button class="rsvp-submit" id="rsvpSubmit">Send RSVP →</button>
+    <div class="rsvp-submit-error" id="rsvpSubmitError" role="alert"></div>
     <div class="rsvp-dev-hint" id="rsvpDevHint" style="display:none;margin-top:10px;font-size:0.8rem;color:var(--autumn-gold);text-align:center">
       ⚡ Dev mode — RSVPs saved locally until Google Sheet is connected
     </div>
@@ -1780,18 +1791,28 @@ function saveRsvps() { localStorage.setItem('wc_rsvps', JSON.stringify(rsvps)); 
 function apiCall(method, path, body, token, callback) {
   if (!VPS_API_URL) { callback({ success: false, offline: true }); return; }
   var xhr = new XMLHttpRequest();
+  var completed = false;
+  function finish(response) {
+    if (completed) return;
+    completed = true;
+    callback(response);
+  }
   xhr.open(method, VPS_API_URL + path, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
   xhr.timeout = 10000;
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
-      try { callback(JSON.parse(xhr.responseText)); }
-      catch(e) { callback({ success: false, error: 'Network error' }); }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        finish({ ok: false, error: 'The RSVP server could not accept your response. Please try again.' });
+        return;
+      }
+      try { finish(JSON.parse(xhr.responseText)); }
+      catch(e) { finish({ ok: false, error: 'The RSVP server sent an unreadable response. Please try again.' }); }
     }
   };
-  xhr.ontimeout = function() { callback({ success: false, error: 'Request timed out' }); };
-  xhr.onerror = function() { callback({ success: false, error: 'Network error' }); };
+  xhr.ontimeout = function() { finish({ ok: false, error: 'The RSVP server took too long to respond. Please try again.' }); };
+  xhr.onerror = function() { finish({ ok: false, error: 'Unable to reach the RSVP server. Please try again.' }); };
   xhr.send(body ? JSON.stringify(body) : null);
 }
 
@@ -2277,6 +2298,16 @@ function closeSheetFs() {
 // Pending RSVPs stored when VPS is unreachable
 var pendingRsvps = JSON.parse(localStorage.getItem('wc_pending_rsvps') || '[]');
 
+function showRsvpSubmitError(message) {
+  var error = document.getElementById('rsvpSubmitError');
+  error.textContent = message;
+  error.style.display = 'block';
+}
+
+function clearRsvpSubmitError() {
+  document.getElementById('rsvpSubmitError').style.display = 'none';
+}
+
 // The Friday dinner choices are visibly checkboxes, but only one response is allowed.
 ['rsvpFridayDinnerYes', 'rsvpFridayDinnerNo'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function() {
@@ -2318,6 +2349,7 @@ function syncPendingRsvps() {
 }
 
 document.getElementById('rsvpSubmit').addEventListener('click', function() {
+  clearRsvpSubmitError();
   var name = document.getElementById('rsvpName').value.trim();
   var attending = document.getElementById('rsvpAttending').value;
   if (!name || !attending) {
@@ -2349,45 +2381,29 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
     return;
   }
 
-  // Check VPS health first
-  checkVpsHealth(function(healthy) {
-    if (healthy) {
-      // VPS is up — submit directly
-      apiCall('POST', '/api/rsvp', {
-        name: rsvp.name,
-        email: rsvp.email,
-        attending: rsvp.attending === 'yes',
-        guests: rsvp.guests,
-        dietary: rsvp.diet || '',
-        message: rsvp.message || '',
-        game: rsvp.game || '',
-        song: rsvp.song || '',
-        bootySong: rsvp.bootySong || '',
-        chatSubject: rsvp.chatSubject || '',
-        fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null)
-      }, null, function(res) {
-        if (res.ok) {
-          document.getElementById('rsvpForm').style.display = 'none';
-          document.getElementById('rsvp-confirm').style.display = 'block';
-        } else {
-          // API error — save to pending queue
-          pendingRsvps.push(rsvp);
-          localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
-          document.getElementById('rsvpForm').style.display = 'none';
-          document.getElementById('rsvp-confirm').style.display = 'block';
-          // Show a subtle note
-          var confirmP = document.getElementById('rsvp-confirm').querySelector('p');
-          if (confirmP) confirmP.textContent = 'Your RSVP is saved and will be sent automatically when the server is back online.';
-        }
-      });
-    } else {
-      // VPS is down — save to pending queue for later sync
-      pendingRsvps.push(rsvp);
-      localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
+  // Submit directly. A preliminary health check can fail independently and must not
+  // cause the form to claim success before the RSVP endpoint has accepted it.
+  apiCall('POST', '/api/rsvp', {
+    name: rsvp.name,
+    email: rsvp.email,
+    attending: rsvp.attending === 'yes',
+    guests: rsvp.guests,
+    dietary: rsvp.diet || '',
+    message: rsvp.message || '',
+    game: rsvp.game || '',
+    song: rsvp.song || '',
+    bootySong: rsvp.bootySong || '',
+    chatSubject: rsvp.chatSubject || '',
+    fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null)
+  }, null, function(res) {
+    if (res.ok) {
       document.getElementById('rsvpForm').style.display = 'none';
       document.getElementById('rsvp-confirm').style.display = 'block';
-      var confirmP = document.getElementById('rsvp-confirm').querySelector('p');
-      if (confirmP) confirmP.textContent = 'Having trouble connecting — your RSVP is saved here. It will send automatically when connection is restored.';
+    } else {
+      // Keep the form visible: an offline queue only exists in this guest's browser.
+      pendingRsvps.push(rsvp);
+      localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
+      showRsvpSubmitError((res && res.error) || 'We could not submit your RSVP. Please try again.');
     }
   });
 });
