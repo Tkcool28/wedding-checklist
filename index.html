@@ -376,6 +376,34 @@ body {
 }
 .rsvp-card textarea { min-height: 100px; resize: vertical; }
 .rsvp-card select option { background: var(--dark-slate); }
+.friday-dinner-title { margin-bottom: 10px !important; }
+.friday-dinner-title span { color: var(--warm-gray); font-size: 0.8rem; letter-spacing: 0.08em; }
+.friday-dinner-options { display: flex; gap: 12px; }
+.friday-dinner-choice {
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  margin: 0 !important;
+  padding: 12px 14px;
+  color: var(--warm-cream) !important;
+  font-family: 'Lora', serif !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  background: rgba(15, 27, 45, 0.8);
+  border: 1px solid rgba(176,88,51,0.25);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.friday-dinner-choice input {
+  width: 18px !important;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--burnt-orange);
+  -webkit-appearance: checkbox;
+}
 .rsvp-submit {
   display: block;
   width: 100%;
@@ -1514,6 +1542,12 @@ body {
       <option value="no">Respectfully Decline</option>
     </select>
 
+    <label class="friday-dinner-title">Friday Night Dinner <span>Same address · 6 PM</span></label>
+    <div class="friday-dinner-options" role="group" aria-label="Friday night dinner attendance">
+      <label class="friday-dinner-choice"><input type="checkbox" id="rsvpFridayDinnerYes"> Will Attend</label>
+      <label class="friday-dinner-choice"><input type="checkbox" id="rsvpFridayDinnerNo"> Will Not Attend</label>
+    </div>
+
     <label>Number of Guests</label>
     <input type="number" id="rsvpGuests" value="1" min="1" max="99" inputmode="numeric" autocomplete="off">
 
@@ -1942,6 +1976,7 @@ function loadRsvpsFromVps() {
           song: r.song || '',
           bootySong: r.booty_song || '',
           chatSubject: r.chat_subject || '',
+          fridayDinnerAttending: r.friday_dinner_attending === null || r.friday_dinner_attending === undefined ? null : (r.friday_dinner_attending ? 'yes' : 'no'),
           message: r.message || '',
           date: r.created_at || new Date().toISOString(),
           vpsId: r.id
@@ -2237,10 +2272,19 @@ function closeSheetFs() {
 }
 
 // =====================
-// RSVP FORM
+// ===================== RSVP FORM
 // =====================
 // Pending RSVPs stored when VPS is unreachable
 var pendingRsvps = JSON.parse(localStorage.getItem('wc_pending_rsvps') || '[]');
+
+// The Friday dinner choices are visibly checkboxes, but only one response is allowed.
+['rsvpFridayDinnerYes', 'rsvpFridayDinnerNo'].forEach(function(id) {
+  document.getElementById(id).addEventListener('change', function() {
+    if (this.checked) {
+      document.getElementById(id === 'rsvpFridayDinnerYes' ? 'rsvpFridayDinnerNo' : 'rsvpFridayDinnerYes').checked = false;
+    }
+  });
+});
 
 // Try to sync any pending RSVPs to the VPS
 function syncPendingRsvps() {
@@ -2259,7 +2303,8 @@ function syncPendingRsvps() {
       game: rsvp.game || '',
       song: rsvp.song || '',
       bootySong: rsvp.bootySong || '',
-      chatSubject: rsvp.chatSubject || ''
+      chatSubject: rsvp.chatSubject || '',
+      fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null)
     }, null, function(res) {
       if (res.ok) {
         console.log('Pending RSVP synced:', rsvp.name);
@@ -2289,6 +2334,7 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
     bootySong: document.getElementById('rsvpBootySong').value.trim(),
     chatSubject: document.getElementById('rsvpChatSubject').value.trim(),
     message: document.getElementById('rsvpMessage').value.trim(),
+    fridayDinnerAttending: document.getElementById('rsvpFridayDinnerYes').checked ? 'yes' : (document.getElementById('rsvpFridayDinnerNo').checked ? 'no' : null),
     date: new Date().toISOString()
   };
 
@@ -2317,7 +2363,8 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
         game: rsvp.game || '',
         song: rsvp.song || '',
         bootySong: rsvp.bootySong || '',
-        chatSubject: rsvp.chatSubject || ''
+        chatSubject: rsvp.chatSubject || '',
+        fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null)
       }, null, function(res) {
         if (res.ok) {
           document.getElementById('rsvpForm').style.display = 'none';
@@ -2387,6 +2434,7 @@ function renderRsvpLog() {
       '<div class="detail">' +
         '<span>Attending:</span> ' + (r.attending === 'yes' ? '✅ Yes' : '❌ No') + '<br>' +
         '<span>Guests:</span> ' + r.guests + '<br>' +
+        '<span>Friday Dinner:</span> ' + (r.fridayDinnerAttending === 'yes' ? '✅ Will attend' : (r.fridayDinnerAttending === 'no' ? '❌ Will not attend' : '<em>Not provided</em>')) + '<br>' +
         '<span>Email:</span> ' + (r.email ? escHtml(r.email) : '<em>Not provided</em>') +
         (r.game ? '<br><span>Game:</span> ' + escHtml(r.game) : '<br><span>Game:</span> <em>Not provided</em>') +
         (r.song ? '<br><span>Sing-along song:</span> ' + escHtml(r.song) : '<br><span>Sing-along song:</span> <em>Not provided</em>') +
@@ -2439,6 +2487,7 @@ function showRsvpDetails(idx) {
     detailRow('Name', r.name),
     detailRow('Email', r.email),
     detailRow('Attending', r.attending === 'yes' ? 'Yes' : 'No'),
+    detailRow('Friday Night Dinner — Same Address, 6 PM', r.fridayDinnerAttending === 'yes' ? 'Will attend' : (r.fridayDinnerAttending === 'no' ? 'Will not attend' : '')),
     detailRow('Guests', r.guests || ''),
     detailRow('Card or Board Game They Like', r.game),
     detailRow('Top-of-Lungs Song', r.song),
