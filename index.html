@@ -2308,6 +2308,28 @@ function clearRsvpSubmitError() {
   document.getElementById('rsvpSubmitError').style.display = 'none';
 }
 
+function sameRsvpGuest(a, b) {
+  return a && b && a.name === b.name && a.email === b.email;
+}
+
+function queueRsvpForRetry(rsvp) {
+  // Keep only the latest unsent version for this guest, even if they revise it.
+  pendingRsvps = pendingRsvps.filter(function(pending) { return !sameRsvpGuest(pending, rsvp); });
+  pendingRsvps.push(rsvp);
+  localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
+}
+
+function removeQueuedRsvp(rsvp) {
+  pendingRsvps = pendingRsvps.filter(function(pending) { return !sameRsvpGuest(pending, rsvp); });
+  localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
+}
+
+function setRsvpSubmitInFlight(inFlight) {
+  var submit = document.getElementById('rsvpSubmit');
+  submit.disabled = inFlight;
+  submit.textContent = inFlight ? 'Sending RSVP…' : 'Send RSVP →';
+}
+
 // The Friday dinner choices are visibly checkboxes, but only one response is allowed.
 ['rsvpFridayDinnerYes', 'rsvpFridayDinnerNo'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function() {
@@ -2349,6 +2371,7 @@ function syncPendingRsvps() {
 }
 
 document.getElementById('rsvpSubmit').addEventListener('click', function() {
+  if (this.disabled) return;
   clearRsvpSubmitError();
   var name = document.getElementById('rsvpName').value.trim();
   var attending = document.getElementById('rsvpAttending').value;
@@ -2383,6 +2406,7 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
 
   // Submit directly. A preliminary health check can fail independently and must not
   // cause the form to claim success before the RSVP endpoint has accepted it.
+  setRsvpSubmitInFlight(true);
   apiCall('POST', '/api/rsvp', {
     name: rsvp.name,
     email: rsvp.email,
@@ -2396,13 +2420,14 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
     chatSubject: rsvp.chatSubject || '',
     fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null)
   }, null, function(res) {
+    setRsvpSubmitInFlight(false);
     if (res.ok) {
+      removeQueuedRsvp(rsvp);
       document.getElementById('rsvpForm').style.display = 'none';
       document.getElementById('rsvp-confirm').style.display = 'block';
     } else {
       // Keep the form visible: an offline queue only exists in this guest's browser.
-      pendingRsvps.push(rsvp);
-      localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
+      queueRsvpForRetry(rsvp);
       showRsvpSubmitError((res && res.error) || 'We could not submit your RSVP. Please try again.');
     }
   });
