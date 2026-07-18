@@ -2312,8 +2312,22 @@ function sameRsvpGuest(a, b) {
   return a && b && a.name === b.name && a.email === b.email;
 }
 
+function createClientSubmissionId() {
+  if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+  var bytes = new Uint8Array(16);
+  window.crypto.getRandomValues(bytes);
+  return Array.prototype.map.call(bytes, function(byte) { return byte.toString(16).padStart(2, '0'); }).join('');
+}
+
+function getOrCreateClientSubmissionId(rsvp) {
+  var existing = pendingRsvps.find(function(pending) { return sameRsvpGuest(pending, rsvp); });
+  if (existing && existing.clientSubmissionId) return existing.clientSubmissionId;
+  return createClientSubmissionId();
+}
+
 function queueRsvpForRetry(rsvp) {
   // Keep only the latest unsent version for this guest, even if they revise it.
+  rsvp.clientSubmissionId = rsvp.clientSubmissionId || getOrCreateClientSubmissionId(rsvp);
   pendingRsvps = pendingRsvps.filter(function(pending) { return !sameRsvpGuest(pending, rsvp); });
   pendingRsvps.push(rsvp);
   localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
@@ -2343,9 +2357,9 @@ function setRsvpSubmitInFlight(inFlight) {
 function syncPendingRsvps() {
   if (!VPS_API_URL || pendingRsvps.length === 0) return;
   var toSend = pendingRsvps.slice(); // copy
-  pendingRsvps = [];
-  localStorage.setItem('wc_pending_rsvps', '[]');
   toSend.forEach(function(rsvp) {
+    rsvp.clientSubmissionId = rsvp.clientSubmissionId || getOrCreateClientSubmissionId(rsvp);
+    localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
     apiCall('POST', '/api/rsvp', {
       name: rsvp.name,
       email: rsvp.email,
@@ -2357,14 +2371,14 @@ function syncPendingRsvps() {
       song: rsvp.song || '',
       bootySong: rsvp.bootySong || '',
       chatSubject: rsvp.chatSubject || '',
-      fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null)
+      fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null),
+      clientSubmissionId: rsvp.clientSubmissionId || getOrCreateClientSubmissionId(rsvp)
     }, null, function(res) {
       if (res.ok) {
+        removeQueuedRsvp(rsvp);
         console.log('Pending RSVP synced:', rsvp.name);
       } else {
-        // Put it back
-        pendingRsvps.push(rsvp);
-        localStorage.setItem('wc_pending_rsvps', JSON.stringify(pendingRsvps));
+        queueRsvpForRetry(rsvp);
       }
     });
   });
@@ -2390,8 +2404,10 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
     chatSubject: document.getElementById('rsvpChatSubject').value.trim(),
     message: document.getElementById('rsvpMessage').value.trim(),
     fridayDinnerAttending: document.getElementById('rsvpFridayDinnerYes').checked ? 'yes' : (document.getElementById('rsvpFridayDinnerNo').checked ? 'no' : null),
+    clientSubmissionId: null,
     date: new Date().toISOString()
   };
+  rsvp.clientSubmissionId = getOrCreateClientSubmissionId(rsvp);
 
   // Always save locally first (for admin dashboard display)
   rsvps.push(rsvp);
@@ -2418,7 +2434,8 @@ document.getElementById('rsvpSubmit').addEventListener('click', function() {
     song: rsvp.song || '',
     bootySong: rsvp.bootySong || '',
     chatSubject: rsvp.chatSubject || '',
-    fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null)
+    fridayDinnerAttending: rsvp.fridayDinnerAttending === 'yes' ? true : (rsvp.fridayDinnerAttending === 'no' ? false : null),
+    clientSubmissionId: rsvp.clientSubmissionId
   }, null, function(res) {
     setRsvpSubmitInFlight(false);
     if (res.ok) {
