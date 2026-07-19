@@ -379,6 +379,8 @@ body {
 .friday-dinner-title { margin-bottom: 10px !important; }
 .friday-dinner-title span { color: var(--warm-gray); font-size: 0.8rem; letter-spacing: 0.08em; }
 .friday-dinner-options { display: flex; gap: 12px; }
+.friday-dinner-callout .friday-dinner-options { margin-top: 18px; }
+.friday-dinner-callout p { font-style: normal; }
 .friday-dinner-choice {
   display: flex !important;
   align-items: center;
@@ -1530,6 +1532,15 @@ body {
     <h3>Games &amp; Merriment</h3>
     <p>Chandra &amp; Todd ask all guests to bring a board game or card game to share! From Catan to Uno to Cards Against Humanity — let the backyard games begin!</p>
   </div>
+
+  <div class="games-callout friday-dinner-callout">
+    <h3>Friday Night Dinner</h3>
+    <p>Many of our guests are traveling and we will be hosting dinner on Friday 9/25 at 937 Wagonwheel Drive Ft Collins. We would love for you to join us for dinner!</p>
+    <div class="friday-dinner-options" role="group" aria-label="Friday night dinner attendance">
+      <label class="friday-dinner-choice"><input type="checkbox" id="rsvpFridayDinnerYes"> Will Attend</label>
+      <label class="friday-dinner-choice"><input type="checkbox" id="rsvpFridayDinnerNo"> Will Not Attend</label>
+    </div>
+  </div>
 </section>
 
 <!-- ============ RSVP ============ -->
@@ -1551,12 +1562,6 @@ body {
       <option value="yes">Joyfully Accept</option>
       <option value="no">Respectfully Decline</option>
     </select>
-
-    <label class="friday-dinner-title">Friday Night Dinner <span>Same address · 6 PM</span></label>
-    <div class="friday-dinner-options" role="group" aria-label="Friday night dinner attendance">
-      <label class="friday-dinner-choice"><input type="checkbox" id="rsvpFridayDinnerYes"> Will Attend</label>
-      <label class="friday-dinner-choice"><input type="checkbox" id="rsvpFridayDinnerNo"> Will Not Attend</label>
-    </div>
 
     <label>Number of Guests</label>
     <input type="number" id="rsvpGuests" value="1" min="1" max="99" inputmode="numeric" autocomplete="off">
