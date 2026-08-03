@@ -1808,12 +1808,16 @@ function apiCall(method, path, body, token, callback) {
   xhr.timeout = 10000;
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
-      if (xhr.status < 200 || xhr.status >= 300) {
-        finish({ ok: false, error: 'The RSVP server could not accept your response. Please try again.' });
-        return;
+      try {
+        var response = JSON.parse(xhr.responseText);
+        if (xhr.status < 200 || xhr.status >= 300) {
+          finish({ ok: false, error: response.error || 'The RSVP server could not accept your response. Please try again.' });
+          return;
+        }
+        finish(response);
+      } catch(e) {
+        finish({ ok: false, error: xhr.status < 200 || xhr.status >= 300 ? 'The RSVP server could not accept your response. Please try again.' : 'The RSVP server sent an unreadable response. Please try again.' });
       }
-      try { finish(JSON.parse(xhr.responseText)); }
-      catch(e) { finish({ ok: false, error: 'The RSVP server sent an unreadable response. Please try again.' }); }
     }
   };
   xhr.ontimeout = function() { finish({ ok: false, error: 'The RSVP server took too long to respond. Please try again.' }); };
